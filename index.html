@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Custom AI Interface</title>
+    <title>St John's AI</title>
     <!-- External Libraries for 3D graphics and Markdown rendering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -48,7 +48,7 @@
             display: flex;
             flex-direction: column;
             z-index: 10;
-            pointer-events: none; /* Let clicks pass through to 3D except on UI elements */
+            pointer-events: none;
         }
 
         /* Header */
@@ -99,7 +99,6 @@
             scroll-behavior: smooth;
         }
 
-        /* Hide Scrollbar */
         #chat-container::-webkit-scrollbar { width: 6px; }
         #chat-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 
@@ -199,7 +198,7 @@
         }
 
         .modal-content {
-            background: rgba(20, 20, 25, 0.9);
+            background: rgba(20, 20, 25, 0.95);
             border: 1px solid var(--glass-border);
             padding: 30px;
             border-radius: 15px;
@@ -208,10 +207,10 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
 
-        .modal-content h2 { margin-top: 0; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;}
+        .modal-content h2 { margin-top: 0; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px; }
         
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #ccc;}
+        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #ccc; }
         .form-group input, .form-group select {
             width: 100%;
             padding: 10px;
@@ -233,19 +232,18 @@
         #save-settings { background: var(--primary-color); color: black; }
         #close-settings { background: #444; color: white; }
 
-        /* Thinking indicator */
-        .typing-indicator { display: none; color: #888; font-style: italic; font-size: 14px; padding-left: 20px;}
+        .typing-indicator { display: none; color: #888; font-style: italic; font-size: 14px; padding-left: 20px; }
     </style>
 </head>
 <body>
 
-    <!-- 3D Background -->
+    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
     <!-- UI Overlay -->
     <div id="ui-wrapper">
         <header>
-            <h1 id="ai-name-display">Aether AI</h1>
+            <h1 id="ai-name-display">St John's AI</h1>
             <button id="settings-btn">⚙️ AI Settings</button>
         </header>
 
@@ -271,7 +269,7 @@
             
             <div class="form-group">
                 <label>AI Name:</label>
-                <input type="text" id="ai-name-input" placeholder="e.g., Nova, Jarvis, Gemini">
+                <input type="text" id="ai-name-input" placeholder="e.g., St John's AI">
             </div>
 
             <div class="form-group">
@@ -307,11 +305,10 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         canvasContainer.appendChild(renderer.domElement);
 
-        // Create a glowing sphere made of particles
         const geometry = new THREE.SphereGeometry(1.5, 64, 64);
         const material = new THREE.PointsMaterial({
             size: 0.015,
-            color: 0x00d2ff, // Cyan default
+            color: 0x00d2ff,
             transparent: true,
             opacity: 0.8,
             blending: THREE.AdditiveBlending
@@ -321,7 +318,6 @@
         scene.add(sphere);
         camera.position.z = 4;
 
-        // Animation logic & state
         let isThinking = false;
         let clock = new THREE.Clock();
 
@@ -329,28 +325,24 @@
             requestAnimationFrame(animate);
             const elapsedTime = clock.getElapsedTime();
 
-            // Idle rotation
             sphere.rotation.y += 0.002;
             sphere.rotation.x += 0.001;
 
             if (isThinking) {
-                // Intense VFX when processing
                 sphere.rotation.y += 0.01;
                 sphere.rotation.z += 0.005;
                 const scale = 1 + Math.sin(elapsedTime * 10) * 0.15;
                 sphere.scale.set(scale, scale, scale);
-                material.color.setHex(0xff00cc); // Shifts to purple/pink
+                material.color.setHex(0xff00cc);
             } else {
-                // Return to idle state gently
                 sphere.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
-                material.color.lerp(new THREE.Color(0x00d2ff), 0.05); // Back to cyan
+                material.color.lerp(new THREE.Color(0x00d2ff), 0.05);
             }
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // Handle window resize for 3D canvas
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -358,15 +350,14 @@
         });
 
         /* =========================================
-           2. SETTINGS & LOCAL STORAGE MANAGEMENT
+           2. SETTINGS MANAGEMENT
            ========================================= */
         const settings = {
-            aiName: localStorage.getItem('aiName') || 'Aether AI',
+            aiName: localStorage.getItem('aiName') || "St John's AI",
             apiKey: localStorage.getItem('apiKey') || '',
             mode: localStorage.getItem('mode') || 'api'
         };
 
-        // UI Elements
         const titleDisplay = document.getElementById('ai-name-display');
         const modal = document.getElementById('settings-modal');
         const nameInput = document.getElementById('ai-name-input');
@@ -381,12 +372,11 @@
         }
         applySettings();
 
-        // Modal Controls
         document.getElementById('settings-btn').addEventListener('click', () => modal.style.display = 'flex');
         document.getElementById('close-settings').addEventListener('click', () => modal.style.display = 'none');
         
         document.getElementById('save-settings').addEventListener('click', () => {
-            settings.aiName = nameInput.value || 'AI';
+            settings.aiName = nameInput.value || "St John's AI";
             settings.apiKey = keyInput.value.trim();
             settings.mode = modeInput.value;
 
@@ -399,7 +389,7 @@
         });
 
         /* =========================================
-           3. CHAT & AI LOGIC
+           3. CHAT ENGINE & RESPONSE HANDLING
            ========================================= */
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
@@ -414,100 +404,98 @@
                 div.innerText = text;
             } else {
                 div.classList.add('ai-message');
-                // Use Marked.js to format bolding, code blocks, lists correctly
-                div.innerHTML = marked.parse(text); 
+                div.innerHTML = marked.parse(text);
             }
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // --- Core Generation Function ---
         async function handleSend() {
             const message = userInput.value.trim();
             if (!message) return;
 
-            // 1. Show user message
             appendMessage('user', message);
             userInput.value = '';
             
-            // 2. Trigger VFX and Thinking State
             isThinking = true;
             typingIndicator.style.display = 'block';
 
             let aiResponseText = "";
 
             try {
-                // Route to API or Offline Engine
                 if (settings.mode === 'api' && settings.apiKey) {
                     aiResponseText = await generateFromGoogleAPI(message);
                 } else {
-                    // Fallback to offline if mode is offline OR API key is missing
-                    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
+                    await new Promise(resolve => setTimeout(resolve, 800));
                     aiResponseText = generateOfflineFallback(message);
                 }
             } catch (error) {
                 console.error(error);
-                aiResponseText = `**System Error:** Communication failed. If using API mode, ensure your Google API Key is correct in settings. \n\n*Details: ${error.message}*`;
+                aiResponseText = `**System Error:** Communication failed. \n\n*Details: ${error.message}*`;
             }
 
-            // 3. Render Response and Reset VFX
             isThinking = false;
             typingIndicator.style.display = 'none';
             appendMessage('ai', aiResponseText);
         }
 
-        // --- Google AI Studio API Endpoint ---
+        // Updated working model endpoint & developer instructions
         async function generateFromGoogleAPI(prompt) {
-            // Using standard standard model mapping for text (gemini-1.5-flash)
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.apiKey}`;
+            const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
+            
+            // Models endpoint using gemini-2.5-flash
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`;
             
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    system_instruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
                     contents: [{ parts: [{ text: prompt }] }]
                 })
             });
 
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.error.message || "Invalid API response");
+                throw new Error(err.error?.message || "Invalid API response");
             }
 
             const data = await response.json();
             return data.candidates[0].content.parts[0].text;
         }
 
-        // --- Offline / No-API Local Fallback Engine ---
+        // Offline logic with built-in creator acknowledgement
         function generateOfflineFallback(prompt) {
             const lower = prompt.toLowerCase();
             const name = settings.aiName;
+
+            // Creator check
+            if (lower.includes("who made you") || lower.includes("who created you") || lower.includes("who built you") || lower.includes("maker") || lower.includes("creator")) {
+                return `I was created by **Rehan and his group**.`;
+            }
 
             if (lower.includes("hello") || lower.includes("hi")) {
                 return `Hello! I am **${name}**, currently operating in *Offline Mode*. How can I help you today?`;
             }
             if (lower.includes("who are you")) {
-                return `I am **${name}**, your customized AI interface. Currently, I am disconnected from the Google brain and running on local rule-based logic.`;
+                return `I am **${name}**, created by **Rehan and his group**. Currently running in offline mode.`;
+            }
+            if (lower.includes("saint john") || lower.includes("st john")) {
+                return `St. John's is a renowned institution in Ranchi, Jharkhand, known for its educational excellence and community presence.`;
             }
             if (lower.includes("time") || lower.includes("date")) {
-                return `The current local date and time is **${new Date().toLocaleString()}**.`;
+                return `The current time is **${new Date().toLocaleTimeString()}**.`;
             }
-            if (lower.includes("api")) {
-                return `To unlock my full generative intelligence, please open the **AI Settings** (⚙️) menu, select *Google AI Studio API*, and input a valid Gemini API key.`;
-            }
-            if (lower.includes("joke")) {
-                return `Why did the AI cross the road? \n\n*To optimize the chicken's pathfinding algorithm!*`;
-            }
-            
-            return `I hear you saying: "${prompt}". \n\n*Note: I am running in Offline Mode. Switch to API mode and add a Google Studio API Key in the settings for full AI comprehension!*`;
+
+            return `I hear you saying: "${prompt}". \n\n*(Note: Running in Offline Mode. Switch to API mode in AI Settings for full answers!)*`;
         }
 
-        // Event Listeners for Chat
         sendBtn.addEventListener('click', handleSend);
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleSend();
         });
-
     </script>
 </body>
 </html>
