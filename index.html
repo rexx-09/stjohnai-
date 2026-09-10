@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Custom AI Interface</title>
+    <!-- External Libraries for 3D graphics and Markdown rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #050505;
+            --glass-bg: rgba(20, 20, 25, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --primary-color: #00d2ff;
+            --text-color: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        /* 3D Background Canvas */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Main UI Container */
+        #ui-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to 3D except on UI elements */
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            pointer-events: auto;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+            text-shadow: 0 0 10px var(--primary-color);
+            letter-spacing: 2px;
+        }
+
+        #settings-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        #settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        /* Chat Interface */
+        #chat-container {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            pointer-events: auto;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+            scroll-behavior: smooth;
+        }
+
+        /* Hide Scrollbar */
+        #chat-container::-webkit-scrollbar { width: 6px; }
+        #chat-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 15px;
+            line-height: 1.5;
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: rgba(0, 210, 255, 0.2);
+            border: 1px solid rgba(0, 210, 255, 0.4);
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai-message {
+            align-self: flex-start;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-bottom-left-radius: 2px;
+        }
+
+        .ai-message p { margin: 0 0 10px 0; }
+        .ai-message p:last-child { margin: 0; }
+        .ai-message code { background: rgba(0,0,0,0.5); padding: 2px 5px; border-radius: 4px; }
+        .ai-message pre { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; overflow-x: auto; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Input Area */
+        #input-area {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            pointer-events: auto;
+        }
+
+        .input-wrapper {
+            display: flex;
+            width: 100%;
+            max-width: 800px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 5px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+        }
+
+        #user-input {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            padding: 12px 20px;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #send-btn {
+            background: var(--primary-color);
+            color: black;
+            border: none;
+            border-radius: 25px;
+            padding: 0 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #send-btn:hover {
+            box-shadow: 0 0 15px var(--primary-color);
+            transform: scale(1.05);
+        }
+
+        /* Settings Modal */
+        #settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: rgba(20, 20, 25, 0.9);
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        .modal-content h2 { margin-top: 0; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;}
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #ccc;}
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #444;
+            color: white;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .modal-actions button {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #save-settings { background: var(--primary-color); color: black; }
+        #close-settings { background: #444; color: white; }
+
+        /* Thinking indicator */
+        .typing-indicator { display: none; color: #888; font-style: italic; font-size: 14px; padding-left: 20px;}
+    </style>
+</head>
+<body>
+
+    <!-- 3D Background -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-wrapper">
+        <header>
+            <h1 id="ai-name-display">Aether AI</h1>
+            <button id="settings-btn">⚙️ AI Settings</button>
+        </header>
+
+        <div id="chat-container">
+            <div class="message ai-message">
+                Hello! I am ready. You can configure my engine and rename me using the Settings menu.
+            </div>
+        </div>
+        <div class="typing-indicator" id="typing-indicator">Processing request...</div>
+
+        <div id="input-area">
+            <div class="input-wrapper">
+                <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h2>AI Seating (Settings)</h2>
+            
+            <div class="form-group">
+                <label>AI Name:</label>
+                <input type="text" id="ai-name-input" placeholder="e.g., Nova, Jarvis, Gemini">
+            </div>
+
+            <div class="form-group">
+                <label>Operation Mode:</label>
+                <select id="mode-input">
+                    <option value="api">Google AI Studio API (Smart)</option>
+                    <option value="offline">Offline / Local Mode (Basic)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Google AI Studio API Key:</label>
+                <input type="password" id="api-key-input" placeholder="AIzaSy...">
+                <small style="color: #888; font-size: 11px;">Get yours free at aistudio.google.com</small>
+            </div>
+
+            <div class="modal-actions">
+                <button id="close-settings">Cancel</button>
+                <button id="save-settings">Save Configurations</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================
+           1. 3D VISUAL EFFECTS (THREE.JS)
+           ========================================= */
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        canvasContainer.appendChild(renderer.domElement);
+
+        // Create a glowing sphere made of particles
+        const geometry = new THREE.SphereGeometry(1.5, 64, 64);
+        const material = new THREE.PointsMaterial({
+            size: 0.015,
+            color: 0x00d2ff, // Cyan default
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const sphere = new THREE.Points(geometry, material);
+        scene.add(sphere);
+        camera.position.z = 4;
+
+        // Animation logic & state
+        let isThinking = false;
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            // Idle rotation
+            sphere.rotation.y += 0.002;
+            sphere.rotation.x += 0.001;
+
+            if (isThinking) {
+                // Intense VFX when processing
+                sphere.rotation.y += 0.01;
+                sphere.rotation.z += 0.005;
+                const scale = 1 + Math.sin(elapsedTime * 10) * 0.15;
+                sphere.scale.set(scale, scale, scale);
+                material.color.setHex(0xff00cc); // Shifts to purple/pink
+            } else {
+                // Return to idle state gently
+                sphere.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+                material.color.lerp(new THREE.Color(0x00d2ff), 0.05); // Back to cyan
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize for 3D canvas
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        /* =========================================
+           2. SETTINGS & LOCAL STORAGE MANAGEMENT
+           ========================================= */
+        const settings = {
+            aiName: localStorage.getItem('aiName') || 'Aether AI',
+            apiKey: localStorage.getItem('apiKey') || '',
+            mode: localStorage.getItem('mode') || 'api'
+        };
+
+        // UI Elements
+        const titleDisplay = document.getElementById('ai-name-display');
+        const modal = document.getElementById('settings-modal');
+        const nameInput = document.getElementById('ai-name-input');
+        const keyInput = document.getElementById('api-key-input');
+        const modeInput = document.getElementById('mode-input');
+
+        function applySettings() {
+            titleDisplay.innerText = settings.aiName;
+            nameInput.value = settings.aiName;
+            keyInput.value = settings.apiKey;
+            modeInput.value = settings.mode;
+        }
+        applySettings();
+
+        // Modal Controls
+        document.getElementById('settings-btn').addEventListener('click', () => modal.style.display = 'flex');
+        document.getElementById('close-settings').addEventListener('click', () => modal.style.display = 'none');
+        
+        document.getElementById('save-settings').addEventListener('click', () => {
+            settings.aiName = nameInput.value || 'AI';
+            settings.apiKey = keyInput.value.trim();
+            settings.mode = modeInput.value;
+
+            localStorage.setItem('aiName', settings.aiName);
+            localStorage.setItem('apiKey', settings.apiKey);
+            localStorage.setItem('mode', settings.mode);
+
+            applySettings();
+            modal.style.display = 'none';
+        });
+
+        /* =========================================
+           3. CHAT & AI LOGIC
+           ========================================= */
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        function appendMessage(sender, text) {
+            const div = document.createElement('div');
+            div.classList.add('message');
+            if (sender === 'user') {
+                div.classList.add('user-message');
+                div.innerText = text;
+            } else {
+                div.classList.add('ai-message');
+                // Use Marked.js to format bolding, code blocks, lists correctly
+                div.innerHTML = marked.parse(text); 
+            }
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // --- Core Generation Function ---
+        async function handleSend() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // 1. Show user message
+            appendMessage('user', message);
+            userInput.value = '';
+            
+            // 2. Trigger VFX and Thinking State
+            isThinking = true;
+            typingIndicator.style.display = 'block';
+
+            let aiResponseText = "";
+
+            try {
+                // Route to API or Offline Engine
+                if (settings.mode === 'api' && settings.apiKey) {
+                    aiResponseText = await generateFromGoogleAPI(message);
+                } else {
+                    // Fallback to offline if mode is offline OR API key is missing
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
+                    aiResponseText = generateOfflineFallback(message);
+                }
+            } catch (error) {
+                console.error(error);
+                aiResponseText = `**System Error:** Communication failed. If using API mode, ensure your Google API Key is correct in settings. \n\n*Details: ${error.message}*`;
+            }
+
+            // 3. Render Response and Reset VFX
+            isThinking = false;
+            typingIndicator.style.display = 'none';
+            appendMessage('ai', aiResponseText);
+        }
+
+        // --- Google AI Studio API Endpoint ---
+        async function generateFromGoogleAPI(prompt) {
+            // Using standard standard model mapping for text (gemini-1.5-flash)
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.apiKey}`;
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error.message || "Invalid API response");
+            }
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        // --- Offline / No-API Local Fallback Engine ---
+        function generateOfflineFallback(prompt) {
+            const lower = prompt.toLowerCase();
+            const name = settings.aiName;
+
+            if (lower.includes("hello") || lower.includes("hi")) {
+                return `Hello! I am **${name}**, currently operating in *Offline Mode*. How can I help you today?`;
+            }
+            if (lower.includes("who are you")) {
+                return `I am **${name}**, your customized AI interface. Currently, I am disconnected from the Google brain and running on local rule-based logic.`;
+            }
+            if (lower.includes("time") || lower.includes("date")) {
+                return `The current local date and time is **${new Date().toLocaleString()}**.`;
+            }
+            if (lower.includes("api")) {
+                return `To unlock my full generative intelligence, please open the **AI Settings** (⚙️) menu, select *Google AI Studio API*, and input a valid Gemini API key.`;
+            }
+            if (lower.includes("joke")) {
+                return `Why did the AI cross the road? \n\n*To optimize the chicken's pathfinding algorithm!*`;
+            }
+            
+            return `I hear you saying: "${prompt}". \n\n*Note: I am running in Offline Mode. Switch to API mode and add a Google Studio API Key in the settings for full AI comprehension!*`;
+        }
+
+        // Event Listeners for Chat
+        sendBtn.addEventListener('click', handleSend);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
+        });
+
+    </script>
+</body>
+</html>
