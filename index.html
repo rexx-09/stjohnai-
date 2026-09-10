@@ -249,7 +249,7 @@
 
         <div id="chat-container">
             <div class="message ai-message">
-                Hello! I am ready. You can configure my engine and rename me using the Settings menu.
+                Hello! I am ready. You can configure my API key and rename me using the Settings menu.
             </div>
         </div>
         <div class="typing-indicator" id="typing-indicator">Processing request...</div>
@@ -275,7 +275,7 @@
             <div class="form-group">
                 <label>Operation Mode:</label>
                 <select id="mode-input">
-                    <option value="api">Google AI Studio API (Smart)</option>
+                    <option value="api">Google AI Studio API (Live)</option>
                     <option value="offline">Offline / Local Mode (Basic)</option>
                 </select>
             </div>
@@ -283,7 +283,6 @@
             <div class="form-group">
                 <label>Google AI Studio API Key:</label>
                 <input type="password" id="api-key-input" placeholder="AIzaSy...">
-                <small style="color: #888; font-size: 11px;">Get yours free at aistudio.google.com</small>
             </div>
 
             <div class="modal-actions">
@@ -425,6 +424,8 @@
             try {
                 if (settings.mode === 'api' && settings.apiKey) {
                     aiResponseText = await generateFromGoogleAPI(message);
+                } else if (settings.mode === 'api' && !settings.apiKey) {
+                    aiResponseText = "**System Error:** Please enter your Google AI Studio API Key in the Settings menu.";
                 } else {
                     await new Promise(resolve => setTimeout(resolve, 800));
                     aiResponseText = generateOfflineFallback(message);
@@ -442,9 +443,12 @@
         /* =========================================
            4. GOOGLE API CONNECTION (V1 STABLE)
            ========================================= */
-        async function fetchWithModel(prompt, systemPrompt, modelId) {
-            // Using the stable v1 endpoint
-            const endpoint = `https://generativelanguage.googleapis.com/v1/models/${modelId}:generateContent?key=${settings.apiKey}`;
+        async function generateFromGoogleAPI(prompt) {
+            // Using the strictly stable v1 endpoint and ONLY the flash model. No fallbacks to cause errors.
+            const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${settings.apiKey}`;
+            
+            const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
+
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -453,20 +457,6 @@
                     contents: [{ parts: [{ text: prompt }] }]
                 })
             });
-            return response;
-        }
-
-        async function generateFromGoogleAPI(prompt) {
-            const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
-            
-            // Try the standard flash model on the v1 endpoint
-            let response = await fetchWithModel(prompt, systemPrompt, 'gemini-1.5-flash');
-            
-            // If the primary model fails, try the pro model
-            if (!response.ok) {
-                console.warn("Primary model failed, attempting fallback model...");
-                response = await fetchWithModel(prompt, systemPrompt, 'gemini-1.5-pro');
-            }
 
             if (!response.ok) {
                 const err = await response.json();
@@ -478,27 +468,18 @@
             return data.candidates[0].content.parts[0].text;
         }
 
-        // Offline logic with built-in creator acknowledgement
+        // Offline logic for basic responses if needed
         function generateOfflineFallback(prompt) {
             const lower = prompt.toLowerCase();
             const name = settings.aiName;
 
-            if (lower.includes("who made you") || lower.includes("who created you") || lower.includes("who built you") || lower.includes("maker") || lower.includes("creator")) {
+            if (lower.includes("who made you") || lower.includes("who created you") || lower.includes("built you")) {
                 return `I was created by **Rehan and his group**.`;
             }
             if (lower.includes("hello") || lower.includes("hi")) {
-                return `Hello! I am **${name}**, currently operating in *Offline Mode*. How can I help you today?`;
+                return `Hello! I am **${name}**, currently operating in *Offline Mode*. Switch to API mode in settings for full answers.`;
             }
-            if (lower.includes("who are you")) {
-                return `I am **${name}**, created by **Rehan and his group**. Currently running in offline mode.`;
-            }
-            if (lower.includes("saint john") || lower.includes("st john")) {
-                return `St. John's is a renowned institution in Ranchi, Jharkhand, known for its educational excellence and community presence.`;
-            }
-            if (lower.includes("time") || lower.includes("date")) {
-                return `The current time is **${new Date().toLocaleTimeString()}**.`;
-            }
-
+            
             return `I hear you saying: "${prompt}". \n\n*(Note: Running in Offline Mode. Switch to API mode in AI Settings for full answers!)*`;
         }
 
