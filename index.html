@@ -265,7 +265,7 @@
     <!-- Settings Modal -->
     <div id="settings-modal">
         <div class="modal-content">
-            <h2>AI Seating (Settings)</h2>
+            <h2>AI Settings</h2>
             
             <div class="form-group">
                 <label>AI Name:</label>
@@ -440,10 +440,11 @@
         }
 
         /* =========================================
-           4. GOOGLE API CONNECTION (FIXED)
+           4. GOOGLE API CONNECTION (V1 STABLE)
            ========================================= */
         async function fetchWithModel(prompt, systemPrompt, modelId) {
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${settings.apiKey}`;
+            // Using the stable v1 endpoint
+            const endpoint = `https://generativelanguage.googleapis.com/v1/models/${modelId}:generateContent?key=${settings.apiKey}`;
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -458,13 +459,13 @@
         async function generateFromGoogleAPI(prompt) {
             const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
             
-            // Try the standard pro model first, as it is the most stable across API versions
-            let response = await fetchWithModel(prompt, systemPrompt, 'gemini-1.5-pro-latest');
+            // Try the standard flash model on the v1 endpoint
+            let response = await fetchWithModel(prompt, systemPrompt, 'gemini-1.5-flash');
             
-            // If the first model fails, try the standard flash model
+            // If the primary model fails, try the pro model
             if (!response.ok) {
                 console.warn("Primary model failed, attempting fallback model...");
-                response = await fetchWithModel(prompt, systemPrompt, 'gemini-1.5-flash-latest');
+                response = await fetchWithModel(prompt, systemPrompt, 'gemini-1.5-pro');
             }
 
             if (!response.ok) {
