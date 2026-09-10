@@ -439,12 +439,15 @@
             appendMessage('ai', aiResponseText);
         }
 
-        // Updated for correct v1 API and current 2026 model
+        /* =========================================
+           4. GOOGLE API CONNECTION (FIXED)
+           ========================================= */
         async function generateFromGoogleAPI(prompt) {
+            // The system instruction forces the AI to remember who made it
             const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
             
-            // Fixed Endpoint using 'v1' and 'gemini-3.6-flash'
-            const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent?key=${settings.apiKey}`;
+            // Using the stable gemini-1.5-flash model
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.apiKey}`;
             
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -459,7 +462,8 @@
 
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.error?.message || "Invalid API response");
+                console.error("API Error Details:", err);
+                throw new Error(err.error?.message || "Failed to connect to Google AI Studio.");
             }
 
             const data = await response.json();
