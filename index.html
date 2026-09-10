@@ -445,7 +445,7 @@
            ========================================= */
         async function generateFromGoogleAPI(prompt) {
             // Using the strictly stable v1 endpoint and ONLY the flash model. No fallbacks to cause errors.
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.apiKey}`;
+            const endpoint = `https://generativelanguage.googleapis.com/v1alpha/models/gemini-1.5-flash:generateContent?key=${settings.apiKey}`;
             
             const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
 
