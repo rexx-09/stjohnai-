@@ -439,12 +439,12 @@
             appendMessage('ai', aiResponseText);
         }
 
-        // Updated working model endpoint & developer instructions
+        // Updated for correct v1 API and current 2026 model
         async function generateFromGoogleAPI(prompt) {
             const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
             
-            // Models endpoint using gemini-2.5-flash
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`;
+            // Fixed Endpoint using 'v1' and 'gemini-3.6-flash'
+            const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-3.6-flash:generateContent?key=${settings.apiKey}`;
             
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -471,11 +471,9 @@
             const lower = prompt.toLowerCase();
             const name = settings.aiName;
 
-            // Creator check
             if (lower.includes("who made you") || lower.includes("who created you") || lower.includes("who built you") || lower.includes("maker") || lower.includes("creator")) {
                 return `I was created by **Rehan and his group**.`;
             }
-
             if (lower.includes("hello") || lower.includes("hi")) {
                 return `Hello! I am **${name}**, currently operating in *Offline Mode*. How can I help you today?`;
             }
