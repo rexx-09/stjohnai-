@@ -442,23 +442,30 @@
         /* =========================================
            4. GOOGLE API CONNECTION (FIXED)
            ========================================= */
-        async function generateFromGoogleAPI(prompt) {
-            // The system instruction forces the AI to remember who made it
-            const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
-            
-            // Using the stable gemini-1.5-flash model
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.apiKey}`;
-            
+        async function fetchWithModel(prompt, systemPrompt, modelId) {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${settings.apiKey}`;
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    system_instruction: {
-                        parts: [{ text: systemPrompt }]
-                    },
+                    system_instruction: { parts: [{ text: systemPrompt }] },
                     contents: [{ parts: [{ text: prompt }] }]
                 })
             });
+            return response;
+        }
+
+        async function generateFromGoogleAPI(prompt) {
+            const systemPrompt = `You are ${settings.aiName}. If anyone asks who made you, created you, or built you, you must state that you were made by Rehan and his group.`;
+            
+            // Try the standard pro model first, as it is the most stable across API versions
+            let response = await fetchWithModel(prompt, systemPrompt, 'gemini-1.5-pro-latest');
+            
+            // If the first model fails, try the standard flash model
+            if (!response.ok) {
+                console.warn("Primary model failed, attempting fallback model...");
+                response = await fetchWithModel(prompt, systemPrompt, 'gemini-1.5-flash-latest');
+            }
 
             if (!response.ok) {
                 const err = await response.json();
