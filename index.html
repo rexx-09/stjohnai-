@@ -795,16 +795,20 @@ body::before{
 
             <select id="modelSetting">
 
+                <option value="gemini-3.6-flash">
+                    Gemini 3.6 Flash
+                </option>
+
+                <option value="gemini-3.7-flash">
+                    Gemini 3.7 Flash
+                </option>
+
+                <option value="gemini-3.5-flash">
+                    Gemini 3.5 Flash
+                </option>
+
                 <option value="gemini-2.5-flash">
                     Gemini 2.5 Flash
-                </option>
-
-                <option value="gemini-2.5-pro">
-                    Gemini 2.5 Pro
-                </option>
-
-                <option value="gemini-2.0-flash">
-                    Gemini 2.0 Flash
                 </option>
 
             </select>
@@ -851,7 +855,7 @@ body::before{
 "use strict";
 
 /* ==========================================================
-   DEFAULT SETTINGS
+   GEMINI SETTINGS
 ========================================================== */
 
 const defaultSettings = {
@@ -860,7 +864,11 @@ const defaultSettings = {
 
     key: "",
 
-    model: "gemini-2.5-flash",
+    /*
+      NEW DEFAULT MODEL
+      Your previous model was gemini-2.5-flash.
+    */
+    model: "gemini-3.6-flash",
 
     personality: `You are a helpful, intelligent and friendly educational AI.
 
@@ -964,7 +972,6 @@ Never call St. John's Inter College a CBSE school.
 Never confuse it with St. John's School, Ranchi.
 
 Never invent staff names, fees, phone numbers, results or other facts.`
-
 };
 
 
@@ -972,22 +979,39 @@ Never invent staff names, fees, phone numbers, results or other facts.`
    SAFE LOCAL STORAGE
 ========================================================== */
 
-function getSaved(key, fallback){
+function getSaved(key,fallback){
 
     try{
-        const value = localStorage.getItem(key);
-        return value !== null ? value : fallback;
+
+        const value =
+            localStorage.getItem(key);
+
+        return value !== null
+            ? value
+            : fallback;
+
     }catch(error){
+
         return fallback;
+
     }
+
 }
+
 
 function saveLocal(key,value){
 
     try{
+
         localStorage.setItem(key,value);
+
     }catch(error){
-        console.warn("Local storage unavailable:",error);
+
+        console.warn(
+            "Local storage unavailable:",
+            error
+        );
+
     }
 
 }
@@ -998,18 +1022,61 @@ function saveLocal(key,value){
 ========================================================== */
 
 let settings = {
-    name: getSaved("nova_name",defaultSettings.name),
-    key: getSaved("nova_key",""),
-    model: getSaved("nova_model",defaultSettings.model),
-    personality: getSaved(
-        "nova_personality",
-        defaultSettings.personality
-    ),
-    knowledge: getSaved(
-        "nova_knowledge",
-        defaultSettings.knowledge
-    )
+
+    name:
+        getSaved(
+            "nova_name",
+            defaultSettings.name
+        ),
+
+    key:
+        getSaved(
+            "nova_key",
+            ""
+        ),
+
+    model:
+        getSaved(
+            "nova_model",
+            defaultSettings.model
+        ),
+
+    personality:
+        getSaved(
+            "nova_personality",
+            defaultSettings.personality
+        ),
+
+    knowledge:
+        getSaved(
+            "nova_knowledge",
+            defaultSettings.knowledge
+        )
+
 };
+
+
+/*
+ IMPORTANT:
+ If an old model was saved in localStorage,
+ automatically switch it to the new default.
+*/
+
+if(
+    settings.model === "gemini-2.5-flash" ||
+    settings.model === "gemini-2.5-pro" ||
+    settings.model === "gemini-2.0-flash"
+){
+
+    settings.model =
+        "gemini-3.6-flash";
+
+    saveLocal(
+        "nova_model",
+        settings.model
+    );
+
+}
 
 
 /* ==========================================================
@@ -1017,6 +1084,7 @@ let settings = {
 ========================================================== */
 
 let history = [];
+
 let busy = false;
 
 
@@ -1024,13 +1092,18 @@ let busy = false;
    DOM READY
 ========================================================== */
 
-document.addEventListener("DOMContentLoaded",function(){
+document.addEventListener(
+    "DOMContentLoaded",
+    function(){
 
-    bindEvents();
-    updateBrand();
-    showWelcome();
+        bindEvents();
 
-});
+        updateBrand();
+
+        showWelcome();
+
+    }
+);
 
 
 /* ==========================================================
@@ -1040,22 +1113,34 @@ document.addEventListener("DOMContentLoaded",function(){
 function bindEvents(){
 
     const sendBtn =
-        document.getElementById("sendBtn");
+        document.getElementById(
+            "sendBtn"
+        );
 
     const input =
-        document.getElementById("messageInput");
+        document.getElementById(
+            "messageInput"
+        );
 
     const settingsBtn =
-        document.getElementById("settingsBtn");
+        document.getElementById(
+            "settingsBtn"
+        );
 
     const newChatBtn =
-        document.getElementById("newChatBtn");
+        document.getElementById(
+            "newChatBtn"
+        );
 
     const closeSettings =
-        document.getElementById("closeSettings");
+        document.getElementById(
+            "closeSettings"
+        );
 
     const saveSettingsBtn =
-        document.getElementById("saveSettings");
+        document.getElementById(
+            "saveSettings"
+        );
 
 
     sendBtn.addEventListener(
@@ -1063,20 +1148,24 @@ function bindEvents(){
         sendMessage
     );
 
+
     settingsBtn.addEventListener(
         "click",
         openSettings
     );
+
 
     newChatBtn.addEventListener(
         "click",
         newChat
     );
 
+
     closeSettings.addEventListener(
         "click",
         closeSettingsModal
     );
+
 
     saveSettingsBtn.addEventListener(
         "click",
@@ -1094,6 +1183,7 @@ function bindEvents(){
             ){
 
                 event.preventDefault();
+
                 sendMessage();
 
             }
@@ -1104,30 +1194,38 @@ function bindEvents(){
 
     document
         .querySelectorAll(".suggestion")
-        .forEach(function(button){
+        .forEach(
+            function(button){
 
-            button.addEventListener(
-                "click",
-                function(){
+                button.addEventListener(
+                    "click",
+                    function(){
 
-                    quickAsk(
-                        button.dataset.question
-                    );
+                        quickAsk(
+                            button.dataset.question
+                        );
 
-                }
-            );
+                    }
+                );
 
-        });
+            }
+        );
 
 
     document
-        .getElementById("settingsModal")
+        .getElementById(
+            "settingsModal"
+        )
         .addEventListener(
             "click",
             function(event){
 
-                if(event.target === this){
+                if(
+                    event.target === this
+                ){
+
                     closeSettingsModal();
+
                 }
 
             }
@@ -1143,11 +1241,15 @@ function bindEvents(){
 function updateBrand(){
 
     const logoName =
-        document.getElementById("logoName");
+        document.getElementById(
+            "logoName"
+        );
 
     if(logoName){
+
         logoName.textContent =
             settings.name || "Rehan";
+
     }
 
 }
@@ -1162,21 +1264,32 @@ function showWelcome(){
     history = [];
 
     const chat =
-        document.getElementById("chat");
+        document.getElementById(
+            "chat"
+        );
 
     if(!chat) return;
 
     chat.innerHTML = "";
 
+
     const suggestions =
-        document.getElementById("suggestions");
+        document.getElementById(
+            "suggestions"
+        );
 
     if(suggestions){
-        suggestions.classList.remove("hidden");
+
+        suggestions.classList.remove(
+            "hidden"
+        );
+
     }
+
 
     addMessage(
         "assistant",
+
         `Hi! I'm ${settings.name || "Rehan"} AI. 👋
 
 Ask me anything. I can help with studies, mathematics, science, coding, general knowledge and more.
@@ -1194,10 +1307,16 @@ You can also ask me about St. John's Inter College, Ranchi.`
 function hideSuggestions(){
 
     const suggestions =
-        document.getElementById("suggestions");
+        document.getElementById(
+            "suggestions"
+        );
 
     if(suggestions){
-        suggestions.classList.add("hidden");
+
+        suggestions.classList.add(
+            "hidden"
+        );
+
     }
 
 }
@@ -1210,58 +1329,88 @@ function hideSuggestions(){
 function addMessage(type,text){
 
     const chat =
-        document.getElementById("chat");
+        document.getElementById(
+            "chat"
+        );
 
     if(!chat) return;
 
+
     const wrapper =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
     wrapper.className =
         "message" +
-        (type === "user" ? " user" : "");
+        (
+            type === "user"
+                ? " user"
+                : ""
+        );
 
 
     const avatar =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
-    avatar.className = "avatar";
+    avatar.className =
+        "avatar";
 
     avatar.textContent =
-        type === "user" ? "You" : "AI";
+        type === "user"
+            ? "You"
+            : "AI";
 
 
     const wrap =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
-    wrap.className = "bubbleWrap";
+    wrap.className =
+        "bubbleWrap";
 
 
     const bubble =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
-    bubble.className = "bubble";
+    bubble.className =
+        "bubble";
 
-    bubble.textContent = text;
+    bubble.textContent =
+        text;
 
 
-    wrap.appendChild(bubble);
+    wrap.appendChild(
+        bubble
+    );
 
 
     if(type !== "user"){
 
         const actions =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
-        actions.className = "messageActions";
+        actions.className =
+            "messageActions";
 
 
         const copy =
-            document.createElement("button");
+            document.createElement(
+                "button"
+            );
 
-        copy.className = "smallBtn";
+        copy.className =
+            "smallBtn";
 
-        copy.textContent = "Copy";
+        copy.textContent =
+            "Copy";
 
 
         copy.addEventListener(
@@ -1270,13 +1419,18 @@ function addMessage(type,text){
 
                 try{
 
-                    await navigator.clipboard.writeText(text);
+                    await navigator.clipboard
+                        .writeText(text);
 
-                    showToast("Copied!");
+                    showToast(
+                        "Copied!"
+                    );
 
                 }catch(error){
 
-                    showToast("Copy not available");
+                    showToast(
+                        "Copy not available"
+                    );
 
                 }
 
@@ -1284,16 +1438,29 @@ function addMessage(type,text){
         );
 
 
-        actions.appendChild(copy);
-        wrap.appendChild(actions);
+        actions.appendChild(
+            copy
+        );
+
+        wrap.appendChild(
+            actions
+        );
 
     }
 
 
-    wrapper.appendChild(avatar);
-    wrapper.appendChild(wrap);
+    wrapper.appendChild(
+        avatar
+    );
 
-    chat.appendChild(wrapper);
+    wrapper.appendChild(
+        wrap
+    );
+
+    chat.appendChild(
+        wrapper
+    );
+
 
     scrollBottom();
 
@@ -1306,14 +1473,20 @@ function addMessage(type,text){
 
 function scrollBottom(){
 
-    window.requestAnimationFrame(function(){
+    window.requestAnimationFrame(
+        function(){
 
-        window.scrollTo({
-            top:document.body.scrollHeight,
-            behavior:"smooth"
-        });
+            window.scrollTo({
+                top:
+                    document.body
+                    .scrollHeight,
 
-    });
+                behavior:
+                    "smooth"
+            });
+
+        }
+    );
 
 }
 
@@ -1326,35 +1499,56 @@ function showTyping(){
 
     removeTyping();
 
+
     const chat =
-        document.getElementById("chat");
+        document.getElementById(
+            "chat"
+        );
 
     if(!chat) return;
 
-    const wrapper =
-        document.createElement("div");
 
-    wrapper.className = "message";
-    wrapper.id = "typingMessage";
+    const wrapper =
+        document.createElement(
+            "div"
+        );
+
+    wrapper.className =
+        "message";
+
+    wrapper.id =
+        "typingMessage";
 
 
     const avatar =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
-    avatar.className = "avatar";
-    avatar.textContent = "AI";
+    avatar.className =
+        "avatar";
+
+    avatar.textContent =
+        "AI";
 
 
     const wrap =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
-    wrap.className = "bubbleWrap";
+    wrap.className =
+        "bubbleWrap";
 
 
     const bubble =
-        document.createElement("div");
+        document.createElement(
+            "div"
+        );
 
-    bubble.className = "bubble";
+    bubble.className =
+        "bubble";
+
 
     bubble.innerHTML =
         '<div class="typing">' +
@@ -1364,11 +1558,22 @@ function showTyping(){
         '</div>';
 
 
-    wrap.appendChild(bubble);
-    wrapper.appendChild(avatar);
-    wrapper.appendChild(wrap);
+    wrap.appendChild(
+        bubble
+    );
 
-    chat.appendChild(wrapper);
+    wrapper.appendChild(
+        avatar
+    );
+
+    wrapper.appendChild(
+        wrap
+    );
+
+    chat.appendChild(
+        wrapper
+    );
+
 
     scrollBottom();
 
@@ -1378,10 +1583,14 @@ function showTyping(){
 function removeTyping(){
 
     const element =
-        document.getElementById("typingMessage");
+        document.getElementById(
+            "typingMessage"
+        );
 
     if(element){
+
         element.remove();
+
     }
 
 }
@@ -1448,21 +1657,283 @@ If you want, you can ask me for more details about the college.`;
 
 
 /* ==========================================================
+   GEMINI INTERACTIONS API
+========================================================== */
+
+async function callGemini(message){
+
+    if(!settings.key){
+
+        throw new Error(
+            "Gemini API key is missing."
+        );
+
+    }
+
+
+    /*
+      Make sure an old "models/" prefix
+      is never sent accidentally.
+    */
+
+    const model =
+        String(
+            settings.model ||
+            "gemini-3.6-flash"
+        )
+        .replace(
+            /^models\//,
+            ""
+        );
+
+
+    /*
+      Build the system instruction
+      from the existing settings.
+    */
+
+    const systemText =
+        settings.personality +
+        "\n\nCUSTOM KNOWLEDGE:\n" +
+        settings.knowledge +
+        "\n\nUse the custom knowledge when relevant. Do not invent facts.";
+
+
+    /*
+      Build conversation input.
+    */
+
+    const conversationText =
+        history
+            .slice(-20)
+            .map(
+                function(item){
+
+                    const role =
+                        item.role === "user"
+                            ? "User"
+                            : "Assistant";
+
+
+                    const text =
+                        item.parts
+                            ?.map(
+                                function(part){
+
+                                    return (
+                                        part.text || ""
+                                    );
+
+                                }
+                            )
+                            .join("") || "";
+
+
+                    return (
+                        role +
+                        ": " +
+                        text
+                    );
+
+                }
+            )
+            .join("\n\n");
+
+
+    const fullInput =
+        conversationText
+            ? conversationText +
+              "\n\nUser: " +
+              message
+
+            : message;
+
+
+    /*
+      CURRENT GEMINI INTERACTIONS ENDPOINT
+    */
+
+    const url =
+        "https://generativelanguage.googleapis.com/v1beta/interactions";
+
+
+    /*
+      API key is sent as a request header.
+    */
+
+    const response =
+        await fetch(
+            url,
+            {
+                method:
+                    "POST",
+
+                headers:{
+                    "Content-Type":
+                        "application/json",
+
+                    "x-goog-api-key":
+                        settings.key
+                },
+
+                body:
+                    JSON.stringify({
+
+                        model:
+                            model,
+
+                        input:
+                            fullInput,
+
+                        system_instruction:
+                            systemText,
+
+                        generation_config:{
+                            temperature:
+                                0.7,
+
+                            max_output_tokens:
+                                2048
+                        }
+
+                    })
+            }
+        );
+
+
+    let data = null;
+
+
+    try{
+
+        data =
+            await response.json();
+
+    }catch(error){
+
+        throw new Error(
+            "Gemini returned an invalid response."
+        );
+
+    }
+
+
+    if(!response.ok){
+
+        const apiMessage =
+            data?.error?.message ||
+            data?.message ||
+            `Gemini API request failed with HTTP ${response.status}.`;
+
+
+        throw new Error(
+            `HTTP ${response.status}: ${apiMessage}`
+        );
+
+    }
+
+
+    /*
+      Interactions API response:
+
+      steps[]
+        -> model_output
+            -> content[]
+                -> text
+    */
+
+    const answer =
+        data?.steps
+            ?.filter(
+                function(step){
+
+                    return (
+                        step.type ===
+                        "model_output"
+                    );
+
+                }
+            )
+            ?.flatMap(
+                function(step){
+
+                    return (
+                        step.content || []
+                    );
+
+                }
+            )
+            ?.filter(
+                function(content){
+
+                    return (
+                        content.type ===
+                        "text"
+                    );
+
+                }
+            )
+            ?.map(
+                function(content){
+
+                    return (
+                        content.text || ""
+                    );
+
+                }
+            )
+            ?.join("")
+            ?.trim() || "";
+
+
+    /*
+      Some responses can expose
+      output_text directly.
+    */
+
+    const finalAnswer =
+        answer ||
+        data?.output_text ||
+        "";
+
+
+    if(!finalAnswer){
+
+        throw new Error(
+            "Gemini returned an empty response."
+        );
+
+    }
+
+
+    return finalAnswer;
+
+}
+
+
+/* ==========================================================
    SEND MESSAGE
 ========================================================== */
 
 async function sendMessage(){
 
     if(busy){
+
         return;
+
     }
 
 
     const input =
-        document.getElementById("messageInput");
+        document.getElementById(
+            "messageInput"
+        );
+
 
     if(!input){
+
         return;
+
     }
 
 
@@ -1471,50 +1942,67 @@ async function sendMessage(){
 
 
     if(!message){
+
         return;
+
     }
 
 
     hideSuggestions();
 
+
     input.value = "";
 
-    addMessage("user",message);
+
+    addMessage(
+        "user",
+        message
+    );
 
 
-    /* LOCAL ANSWER */
+    /*
+      Check built-in answers first.
+    */
 
     const localAnswer =
-        getLocalAnswer(message);
+        getLocalAnswer(
+            message
+        );
 
 
     if(localAnswer){
 
-        setTimeout(function(){
+        setTimeout(
+            function(){
 
-            addMessage(
-                "assistant",
-                localAnswer
-            );
+                addMessage(
+                    "assistant",
+                    localAnswer
+                );
 
-        },250);
+            },
+            250
+        );
 
         return;
 
     }
 
 
-    /* API KEY CHECK */
+    /*
+      API KEY CHECK
+    */
 
     if(!settings.key){
 
         addMessage(
             "assistant",
+
             `Please add your Gemini API key in ⚙ Settings first.
 
 Open Settings → Gemini API Key → paste your key → Save Settings.
 
-Your page itself is working; Gemini only needs the API key to answer normal questions.`
+Your interface is working; Gemini only needs the API key to answer normal questions.`
         );
 
         return;
@@ -1524,128 +2012,20 @@ Your page itself is working; Gemini only needs the API key to answer normal ques
 
     busy = true;
 
+
     showTyping();
 
 
     try{
 
-        const model =
-            String(settings.model || "gemini-2.5-flash")
-            .replace(/^models\//,"");
-
-
-        const systemText =
-            settings.personality +
-            "\n\nCUSTOM KNOWLEDGE:\n" +
-            settings.knowledge +
-            "\n\nUse the custom knowledge when relevant. Do not invent facts.";
-
-
-        const contents =
-            history.slice(-20).concat([
-                {
-                    role:"user",
-                    parts:[
-                        {
-                            text:message
-                        }
-                    ]
-                }
-            ]);
-
-
-        const url =
-            "https://generativelanguage.googleapis.com/v1beta/models/" +
-            encodeURIComponent(model) +
-            ":generateContent?key=" +
-            encodeURIComponent(settings.key);
-
-
-        const response =
-            await fetch(
-                url,
-                {
-                    method:"POST",
-
-                    headers:{
-                        "Content-Type":"application/json"
-                    },
-
-                    body:JSON.stringify({
-
-                        systemInstruction:{
-                            parts:[
-                                {
-                                    text:systemText
-                                }
-                            ]
-                        },
-
-                        contents:contents,
-
-                        generationConfig:{
-                            temperature:0.7,
-                            maxOutputTokens:2048
-                        }
-
-                    })
-                }
-            );
-
-
-        let data = null;
-
-        try{
-            data = await response.json();
-        }catch(jsonError){
-            data = null;
-        }
-
-
-        if(!response.ok){
-
-            const apiMessage =
-                data &&
-                data.error &&
-                data.error.message
-                ? data.error.message
-                : "Gemini API request failed.";
-
-            throw new Error(
-                "HTTP " +
-                response.status +
-                ": " +
-                apiMessage
-            );
-
-        }
-
-
         const answer =
-            data &&
-            data.candidates &&
-            data.candidates[0] &&
-            data.candidates[0].content &&
-            data.candidates[0].content.parts
-            ? data.candidates[0].content.parts
-                .map(function(part){
-                    return part.text || "";
-                })
-                .join("")
-                .trim()
-            : "";
-
-
-        if(!answer){
-
-            throw new Error(
-                "Gemini returned no text. The model may have blocked the response."
+            await callGemini(
+                message
             );
-
-        }
 
 
         removeTyping();
+
 
         addMessage(
             "assistant",
@@ -1653,35 +2033,55 @@ Your page itself is working; Gemini only needs the API key to answer normal ques
         );
 
 
+        /*
+          Save conversation for
+          the next Gemini request.
+        */
+
         history.push({
-            role:"user",
+
+            role:
+                "user",
+
             parts:[
                 {
-                    text:message
+                    text:
+                        message
                 }
             ]
+
         });
 
 
         history.push({
-            role:"model",
+
+            role:
+                "model",
+
             parts:[
                 {
-                    text:answer
+                    text:
+                        answer
                 }
             ]
+
         });
 
 
     }catch(error){
 
-        console.error("Gemini error:",error);
+        console.error(
+            "Gemini error:",
+            error
+        );
+
 
         removeTyping();
 
 
         addMessage(
             "assistant",
+
             `Sorry, I couldn't get a response from Gemini.
 
 Error:
@@ -1694,6 +2094,7 @@ Check:
 
 Open ⚙ Settings to change the API key or model.`
         );
+
 
     }finally{
 
@@ -1711,11 +2112,21 @@ Open ⚙ Settings to change the API key or model.`
 function quickAsk(text){
 
     const input =
-        document.getElementById("messageInput");
+        document.getElementById(
+            "messageInput"
+        );
 
-    if(!input) return;
 
-    input.value = text;
+    if(!input){
+
+        return;
+
+    }
+
+
+    input.value =
+        text;
+
 
     sendMessage();
 
@@ -1728,25 +2139,52 @@ function quickAsk(text){
 
 function openSettings(){
 
-    document.getElementById("nameSetting").value =
-        settings.name;
-
-    document.getElementById("keySetting").value =
-        settings.key;
-
-    document.getElementById("modelSetting").value =
-        settings.model;
-
-    document.getElementById("personalitySetting").value =
-        settings.personality;
-
-    document.getElementById("knowledgeSetting").value =
-        settings.knowledge;
+    document
+        .getElementById(
+            "nameSetting"
+        )
+        .value =
+            settings.name;
 
 
     document
-        .getElementById("settingsModal")
-        .classList.add("active");
+        .getElementById(
+            "keySetting"
+        )
+        .value =
+            settings.key;
+
+
+    document
+        .getElementById(
+            "modelSetting"
+        )
+        .value =
+            settings.model;
+
+
+    document
+        .getElementById(
+            "personalitySetting"
+        )
+        .value =
+            settings.personality;
+
+
+    document
+        .getElementById(
+            "knowledgeSetting"
+        )
+        .value =
+            settings.knowledge;
+
+
+    document
+        .getElementById(
+            "settingsModal"
+        )
+        .classList
+        .add("active");
 
 }
 
@@ -1754,8 +2192,11 @@ function openSettings(){
 function closeSettingsModal(){
 
     document
-        .getElementById("settingsModal")
-        .classList.remove("active");
+        .getElementById(
+            "settingsModal"
+        )
+        .classList
+        .remove("active");
 
 }
 
@@ -1768,53 +2209,90 @@ function saveSettings(){
 
     settings.name =
         document
-        .getElementById("nameSetting")
-        .value
-        .trim() ||
+            .getElementById(
+                "nameSetting"
+            )
+            .value
+            .trim() ||
         "Rehan";
 
 
     settings.key =
         document
-        .getElementById("keySetting")
-        .value
-        .trim();
+            .getElementById(
+                "keySetting"
+            )
+            .value
+            .trim();
 
 
     settings.model =
         document
-        .getElementById("modelSetting")
-        .value;
+            .getElementById(
+                "modelSetting"
+            )
+            .value;
 
 
     settings.personality =
         document
-        .getElementById("personalitySetting")
-        .value
-        .trim() ||
+            .getElementById(
+                "personalitySetting"
+            )
+            .value
+            .trim() ||
         defaultSettings.personality;
 
 
     settings.knowledge =
         document
-        .getElementById("knowledgeSetting")
-        .value
-        .trim() ||
+            .getElementById(
+                "knowledgeSetting"
+            )
+            .value
+            .trim() ||
         defaultSettings.knowledge;
 
 
-    saveLocal("nova_name",settings.name);
-    saveLocal("nova_key",settings.key);
-    saveLocal("nova_model",settings.model);
-    saveLocal("nova_personality",settings.personality);
-    saveLocal("nova_knowledge",settings.knowledge);
+    saveLocal(
+        "nova_name",
+        settings.name
+    );
+
+
+    saveLocal(
+        "nova_key",
+        settings.key
+    );
+
+
+    saveLocal(
+        "nova_model",
+        settings.model
+    );
+
+
+    saveLocal(
+        "nova_personality",
+        settings.personality
+    );
+
+
+    saveLocal(
+        "nova_knowledge",
+        settings.knowledge
+    );
 
 
     updateBrand();
 
+
     closeSettingsModal();
 
-    showToast("Settings saved successfully!");
+
+    showToast(
+        "Settings saved successfully!"
+    );
 
 }
 
@@ -1829,14 +2307,23 @@ function newChat(){
 
     showWelcome();
 
+
     const input =
-        document.getElementById("messageInput");
+        document.getElementById(
+            "messageInput"
+        );
+
 
     if(input){
+
         input.focus();
+
     }
 
-    showToast("New chat started");
+
+    showToast(
+        "New chat started"
+    );
 
 }
 
@@ -1848,20 +2335,37 @@ function newChat(){
 function showToast(text){
 
     const toast =
-        document.getElementById("toast");
-
-    if(!toast) return;
-
-    toast.textContent = text;
-
-    toast.classList.add("show");
+        document.getElementById(
+            "toast"
+        );
 
 
-    window.setTimeout(function(){
+    if(!toast){
 
-        toast.classList.remove("show");
+        return;
 
-    },2000);
+    }
+
+
+    toast.textContent =
+        text;
+
+
+    toast.classList.add(
+        "show"
+    );
+
+
+    window.setTimeout(
+        function(){
+
+            toast.classList.remove(
+                "show"
+            );
+
+        },
+        2000
+    );
 
 }
 </script>
