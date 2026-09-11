@@ -855,7 +855,7 @@ body::before{
 "use strict";
 
 /* ==========================================================
-   GEMINI SETTINGS
+   DEFAULT SETTINGS
 ========================================================== */
 
 const defaultSettings = {
@@ -864,10 +864,6 @@ const defaultSettings = {
 
     key: "",
 
-    /*
-      NEW DEFAULT MODEL
-      Your previous model was gemini-2.5-flash.
-    */
     model: "gemini-3.6-flash",
 
     personality: `You are a helpful, intelligent and friendly educational AI.
@@ -972,6 +968,7 @@ Never call St. John's Inter College a CBSE school.
 Never confuse it with St. John's School, Ranchi.
 
 Never invent staff names, fees, phone numbers, results or other facts.`
+
 };
 
 
@@ -979,39 +976,22 @@ Never invent staff names, fees, phone numbers, results or other facts.`
    SAFE LOCAL STORAGE
 ========================================================== */
 
-function getSaved(key,fallback){
+function getSaved(key, fallback){
 
     try{
-
-        const value =
-            localStorage.getItem(key);
-
-        return value !== null
-            ? value
-            : fallback;
-
+        const value = localStorage.getItem(key);
+        return value !== null ? value : fallback;
     }catch(error){
-
         return fallback;
-
     }
-
 }
-
 
 function saveLocal(key,value){
 
     try{
-
         localStorage.setItem(key,value);
-
     }catch(error){
-
-        console.warn(
-            "Local storage unavailable:",
-            error
-        );
-
+        console.warn("Local storage unavailable:",error);
     }
 
 }
@@ -1022,61 +1002,28 @@ function saveLocal(key,value){
 ========================================================== */
 
 let settings = {
-
-    name:
-        getSaved(
-            "nova_name",
-            defaultSettings.name
-        ),
-
-    key:
-        getSaved(
-            "nova_key",
-            ""
-        ),
-
-    model:
-        getSaved(
-            "nova_model",
-            defaultSettings.model
-        ),
-
-    personality:
-        getSaved(
-            "nova_personality",
-            defaultSettings.personality
-        ),
-
-    knowledge:
-        getSaved(
-            "nova_knowledge",
-            defaultSettings.knowledge
-        )
-
+    name: getSaved("nova_name",defaultSettings.name),
+    key: getSaved("nova_key",""),
+    model: getSaved("nova_model",defaultSettings.model),
+    personality: getSaved(
+        "nova_personality",
+        defaultSettings.personality
+    ),
+    knowledge: getSaved(
+        "nova_knowledge",
+        defaultSettings.knowledge
+    )
 };
 
 
-/*
- IMPORTANT:
- If an old model was saved in localStorage,
- automatically switch it to the new default.
-*/
+/* ==========================================================
+   API CONVERSATION STATE
+   SPEED CHANGE:
+   We keep the Gemini interaction ID instead of sending
+   the entire chat history on every request.
+========================================================== */
 
-if(
-    settings.model === "gemini-2.5-flash" ||
-    settings.model === "gemini-2.5-pro" ||
-    settings.model === "gemini-2.0-flash"
-){
-
-    settings.model =
-        "gemini-3.6-flash";
-
-    saveLocal(
-        "nova_model",
-        settings.model
-    );
-
-}
+let interactionId = null;
 
 
 /* ==========================================================
@@ -1084,7 +1031,6 @@ if(
 ========================================================== */
 
 let history = [];
-
 let busy = false;
 
 
@@ -1092,18 +1038,13 @@ let busy = false;
    DOM READY
 ========================================================== */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function(){
+document.addEventListener("DOMContentLoaded",function(){
 
-        bindEvents();
+    bindEvents();
+    updateBrand();
+    showWelcome();
 
-        updateBrand();
-
-        showWelcome();
-
-    }
-);
+});
 
 
 /* ==========================================================
@@ -1113,34 +1054,22 @@ document.addEventListener(
 function bindEvents(){
 
     const sendBtn =
-        document.getElementById(
-            "sendBtn"
-        );
+        document.getElementById("sendBtn");
 
     const input =
-        document.getElementById(
-            "messageInput"
-        );
+        document.getElementById("messageInput");
 
     const settingsBtn =
-        document.getElementById(
-            "settingsBtn"
-        );
+        document.getElementById("settingsBtn");
 
     const newChatBtn =
-        document.getElementById(
-            "newChatBtn"
-        );
+        document.getElementById("newChatBtn");
 
     const closeSettings =
-        document.getElementById(
-            "closeSettings"
-        );
+        document.getElementById("closeSettings");
 
     const saveSettingsBtn =
-        document.getElementById(
-            "saveSettings"
-        );
+        document.getElementById("saveSettings");
 
 
     sendBtn.addEventListener(
@@ -1148,24 +1077,20 @@ function bindEvents(){
         sendMessage
     );
 
-
     settingsBtn.addEventListener(
         "click",
         openSettings
     );
-
 
     newChatBtn.addEventListener(
         "click",
         newChat
     );
 
-
     closeSettings.addEventListener(
         "click",
         closeSettingsModal
     );
-
 
     saveSettingsBtn.addEventListener(
         "click",
@@ -1183,7 +1108,6 @@ function bindEvents(){
             ){
 
                 event.preventDefault();
-
                 sendMessage();
 
             }
@@ -1194,38 +1118,30 @@ function bindEvents(){
 
     document
         .querySelectorAll(".suggestion")
-        .forEach(
-            function(button){
+        .forEach(function(button){
 
-                button.addEventListener(
-                    "click",
-                    function(){
+            button.addEventListener(
+                "click",
+                function(){
 
-                        quickAsk(
-                            button.dataset.question
-                        );
+                    quickAsk(
+                        button.dataset.question
+                    );
 
-                    }
-                );
+                }
+            );
 
-            }
-        );
+        });
 
 
     document
-        .getElementById(
-            "settingsModal"
-        )
+        .getElementById("settingsModal")
         .addEventListener(
             "click",
             function(event){
 
-                if(
-                    event.target === this
-                ){
-
+                if(event.target === this){
                     closeSettingsModal();
-
                 }
 
             }
@@ -1241,15 +1157,11 @@ function bindEvents(){
 function updateBrand(){
 
     const logoName =
-        document.getElementById(
-            "logoName"
-        );
+        document.getElementById("logoName");
 
     if(logoName){
-
         logoName.textContent =
             settings.name || "Rehan";
-
     }
 
 }
@@ -1263,33 +1175,26 @@ function showWelcome(){
 
     history = [];
 
+    /* SPEED/API CHANGE:
+       Start a completely fresh Gemini conversation. */
+    interactionId = null;
+
     const chat =
-        document.getElementById(
-            "chat"
-        );
+        document.getElementById("chat");
 
     if(!chat) return;
 
     chat.innerHTML = "";
 
-
     const suggestions =
-        document.getElementById(
-            "suggestions"
-        );
+        document.getElementById("suggestions");
 
     if(suggestions){
-
-        suggestions.classList.remove(
-            "hidden"
-        );
-
+        suggestions.classList.remove("hidden");
     }
-
 
     addMessage(
         "assistant",
-
         `Hi! I'm ${settings.name || "Rehan"} AI. 👋
 
 Ask me anything. I can help with studies, mathematics, science, coding, general knowledge and more.
@@ -1307,16 +1212,10 @@ You can also ask me about St. John's Inter College, Ranchi.`
 function hideSuggestions(){
 
     const suggestions =
-        document.getElementById(
-            "suggestions"
-        );
+        document.getElementById("suggestions");
 
     if(suggestions){
-
-        suggestions.classList.add(
-            "hidden"
-        );
-
+        suggestions.classList.add("hidden");
     }
 
 }
@@ -1329,88 +1228,58 @@ function hideSuggestions(){
 function addMessage(type,text){
 
     const chat =
-        document.getElementById(
-            "chat"
-        );
+        document.getElementById("chat");
 
-    if(!chat) return;
-
+    if(!chat) return null;
 
     const wrapper =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
     wrapper.className =
         "message" +
-        (
-            type === "user"
-                ? " user"
-                : ""
-        );
+        (type === "user" ? " user" : "");
 
 
     const avatar =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
-    avatar.className =
-        "avatar";
+    avatar.className = "avatar";
 
     avatar.textContent =
-        type === "user"
-            ? "You"
-            : "AI";
+        type === "user" ? "You" : "AI";
 
 
     const wrap =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
-    wrap.className =
-        "bubbleWrap";
+    wrap.className = "bubbleWrap";
 
 
     const bubble =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
-    bubble.className =
-        "bubble";
+    bubble.className = "bubble";
 
-    bubble.textContent =
-        text;
+    bubble.textContent = text;
 
 
-    wrap.appendChild(
-        bubble
-    );
+    wrap.appendChild(bubble);
 
 
     if(type !== "user"){
 
         const actions =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
-        actions.className =
-            "messageActions";
+        actions.className = "messageActions";
 
 
         const copy =
-            document.createElement(
-                "button"
-            );
+            document.createElement("button");
 
-        copy.className =
-            "smallBtn";
+        copy.className = "smallBtn";
 
-        copy.textContent =
-            "Copy";
+        copy.textContent = "Copy";
 
 
         copy.addEventListener(
@@ -1419,18 +1288,15 @@ function addMessage(type,text){
 
                 try{
 
-                    await navigator.clipboard
-                        .writeText(text);
-
-                    showToast(
-                        "Copied!"
+                    await navigator.clipboard.writeText(
+                        bubble.textContent
                     );
+
+                    showToast("Copied!");
 
                 }catch(error){
 
-                    showToast(
-                        "Copy not available"
-                    );
+                    showToast("Copy not available");
 
                 }
 
@@ -1438,31 +1304,20 @@ function addMessage(type,text){
         );
 
 
-        actions.appendChild(
-            copy
-        );
-
-        wrap.appendChild(
-            actions
-        );
+        actions.appendChild(copy);
+        wrap.appendChild(actions);
 
     }
 
 
-    wrapper.appendChild(
-        avatar
-    );
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(wrap);
 
-    wrapper.appendChild(
-        wrap
-    );
-
-    chat.appendChild(
-        wrapper
-    );
-
+    chat.appendChild(wrapper);
 
     scrollBottom();
+
+    return bubble;
 
 }
 
@@ -1473,20 +1328,14 @@ function addMessage(type,text){
 
 function scrollBottom(){
 
-    window.requestAnimationFrame(
-        function(){
+    window.requestAnimationFrame(function(){
 
-            window.scrollTo({
-                top:
-                    document.body
-                    .scrollHeight,
+        window.scrollTo({
+            top:document.body.scrollHeight,
+            behavior:"smooth"
+        });
 
-                behavior:
-                    "smooth"
-            });
-
-        }
-    );
+    });
 
 }
 
@@ -1499,56 +1348,35 @@ function showTyping(){
 
     removeTyping();
 
-
     const chat =
-        document.getElementById(
-            "chat"
-        );
+        document.getElementById("chat");
 
     if(!chat) return;
 
-
     const wrapper =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
-    wrapper.className =
-        "message";
-
-    wrapper.id =
-        "typingMessage";
+    wrapper.className = "message";
+    wrapper.id = "typingMessage";
 
 
     const avatar =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
-    avatar.className =
-        "avatar";
-
-    avatar.textContent =
-        "AI";
+    avatar.className = "avatar";
+    avatar.textContent = "AI";
 
 
     const wrap =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
-    wrap.className =
-        "bubbleWrap";
+    wrap.className = "bubbleWrap";
 
 
     const bubble =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
 
-    bubble.className =
-        "bubble";
-
+    bubble.className = "bubble";
 
     bubble.innerHTML =
         '<div class="typing">' +
@@ -1558,22 +1386,11 @@ function showTyping(){
         '</div>';
 
 
-    wrap.appendChild(
-        bubble
-    );
+    wrap.appendChild(bubble);
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(wrap);
 
-    wrapper.appendChild(
-        avatar
-    );
-
-    wrapper.appendChild(
-        wrap
-    );
-
-    chat.appendChild(
-        wrapper
-    );
-
+    chat.appendChild(wrapper);
 
     scrollBottom();
 
@@ -1583,14 +1400,10 @@ function showTyping(){
 function removeTyping(){
 
     const element =
-        document.getElementById(
-            "typingMessage"
-        );
+        document.getElementById("typingMessage");
 
     if(element){
-
         element.remove();
-
     }
 
 }
@@ -1657,40 +1470,15 @@ If you want, you can ask me for more details about the college.`;
 
 
 /* ==========================================================
-   GEMINI INTERACTIONS API
+   FAST STREAMING GEMINI REQUEST
 ========================================================== */
 
-async function callGemini(message){
-
-    if(!settings.key){
-
-        throw new Error(
-            "Gemini API key is missing."
-        );
-
-    }
-
-
-    /*
-      Make sure an old "models/" prefix
-      is never sent accidentally.
-    */
+async function askGeminiFast(message){
 
     const model =
-        String(
-            settings.model ||
-            "gemini-3.6-flash"
-        )
-        .replace(
-            /^models\//,
-            ""
-        );
+        String(settings.model || "gemini-3.6-flash")
+        .replace(/^models\//,"");
 
-
-    /*
-      Build the system instruction
-      from the existing settings.
-    */
 
     const systemText =
         settings.personality +
@@ -1700,213 +1488,406 @@ async function callGemini(message){
 
 
     /*
-      Build conversation input.
-    */
+      IMPORTANT SPEED CHANGES:
 
-    const conversationText =
-        history
-            .slice(-20)
-            .map(
-                function(item){
-
-                    const role =
-                        item.role === "user"
-                            ? "User"
-                            : "Assistant";
-
-
-                    const text =
-                        item.parts
-                            ?.map(
-                                function(part){
-
-                                    return (
-                                        part.text || ""
-                                    );
-
-                                }
-                            )
-                            .join("") || "";
-
-
-                    return (
-                        role +
-                        ": " +
-                        text
-                    );
-
-                }
-            )
-            .join("\n\n");
-
-
-    const fullInput =
-        conversationText
-            ? conversationText +
-              "\n\nUser: " +
-              message
-
-            : message;
-
-
-    /*
-      CURRENT GEMINI INTERACTIONS ENDPOINT
+      1. Do NOT resend the last 20 messages.
+      2. Use previous_interaction_id for conversation memory.
+      3. stream:true makes text appear as Gemini generates it.
+      4. low thinking reduces latency for normal questions.
     */
 
     const url =
-        "https://generativelanguage.googleapis.com/v1beta/interactions";
+        "https://generativelanguage.googleapis.com/v1beta/interactions?alt=sse";
+
+
+    const requestBody = {
+
+        model:model,
+
+        input:message,
+
+        stream:true,
+
+        generation_config:{
+            max_output_tokens:1024,
+            thinking_level:"low"
+        }
+
+    };
 
 
     /*
-      API key is sent as a request header.
+      Only the first request needs the personality/custom knowledge.
+      Later requests continue from Gemini's previous interaction.
     */
 
-    const response =
-        await fetch(
-            url,
-            {
-                method:
-                    "POST",
+    if(!interactionId){
 
-                headers:{
-                    "Content-Type":
-                        "application/json",
+        requestBody.system_instruction =
+            systemText;
 
-                    "x-goog-api-key":
-                        settings.key
-                },
+    }else{
 
-                body:
-                    JSON.stringify({
+        requestBody.previous_interaction_id =
+            interactionId;
 
-                        model:
-                            model,
-
-                        input:
-                            fullInput,
-
-                        system_instruction:
-                            systemText,
-
-                        generation_config:{
-                            temperature:
-                                0.7,
-
-                            max_output_tokens:
-                                2048
-                        }
-
-                    })
-            }
-        );
+    }
 
 
-    let data = null;
+    const controller =
+        new AbortController();
 
+    /*
+      Prevent a broken network request from hanging forever.
+      This does NOT intentionally cancel normal fast responses.
+    */
+
+    const timeout =
+        setTimeout(function(){
+
+            controller.abort();
+
+        },45000);
+
+
+    let response;
 
     try{
 
-        data =
-            await response.json();
+        response =
+            await fetch(
+                url,
+                {
+                    method:"POST",
+
+                    headers:{
+                        "Content-Type":"application/json",
+                        "Accept":"text/event-stream",
+                        "x-goog-api-key":settings.key
+                    },
+
+                    body:JSON.stringify(requestBody),
+
+                    signal:controller.signal
+                }
+            );
 
     }catch(error){
 
-        throw new Error(
-            "Gemini returned an invalid response."
-        );
+        clearTimeout(timeout);
+
+        if(error.name === "AbortError"){
+
+            throw new Error(
+                "Gemini request timed out. Please try again."
+            );
+
+        }
+
+        throw error;
 
     }
 
 
     if(!response.ok){
 
+        clearTimeout(timeout);
+
+        let errorData = null;
+
+        try{
+            errorData = await response.json();
+        }catch(error){
+            errorData = null;
+        }
+
+
         const apiMessage =
-            data?.error?.message ||
-            data?.message ||
-            `Gemini API request failed with HTTP ${response.status}.`;
+            errorData &&
+            errorData.error &&
+            errorData.error.message
+            ? errorData.error.message
+            : "Gemini API request failed.";
 
 
         throw new Error(
-            `HTTP ${response.status}: ${apiMessage}`
+            "HTTP " +
+            response.status +
+            ": " +
+            apiMessage
+        );
+
+    }
+
+
+    if(!response.body){
+
+        clearTimeout(timeout);
+
+        throw new Error(
+            "Streaming is not available in this browser."
+        );
+
+    }
+
+
+    const reader =
+        response.body.getReader();
+
+    const decoder =
+        new TextDecoder("utf-8");
+
+
+    let buffer = "";
+    let answer = "";
+    let currentEvent = "";
+
+
+    /*
+      Create the assistant bubble immediately.
+      This makes the first generated token visible
+      without waiting for the full answer.
+    */
+
+    removeTyping();
+
+
+    const assistantBubble =
+        addMessage(
+            "assistant",
+            ""
+        );
+
+
+    function processSSELine(line){
+
+        if(line.startsWith("event:")){
+
+            currentEvent =
+                line.slice(6).trim();
+
+            return;
+
+        }
+
+
+        if(!line.startsWith("data:")){
+
+            return;
+
+        }
+
+
+        const raw =
+            line.slice(5).trim();
+
+
+        if(!raw || raw === "[DONE]"){
+
+            return;
+
+        }
+
+
+        let data;
+
+        try{
+
+            data =
+                JSON.parse(raw);
+
+        }catch(error){
+
+            return;
+
+        }
+
+
+        /*
+          Capture the interaction ID.
+          This is what lets the next message use
+          previous_interaction_id instead of resending
+          the complete history.
+        */
+
+        if(
+            data.interaction &&
+            data.interaction.id
+        ){
+
+            interactionId =
+                data.interaction.id;
+
+        }
+
+
+        /*
+          Fast streaming output:
+          Google sends text through step.delta events.
+        */
+
+        if(
+            currentEvent === "step.delta" &&
+            data.delta &&
+            data.delta.type === "text" &&
+            typeof data.delta.text === "string"
+        ){
+
+            answer +=
+                data.delta.text;
+
+
+            if(assistantBubble){
+
+                assistantBubble.textContent =
+                    answer;
+
+            }
+
+
+            scrollBottom();
+
+        }
+
+
+        /*
+          Some responses may include the interaction
+          information on completion.
+        */
+
+        if(
+            currentEvent === "interaction.completed" &&
+            data.interaction
+        ){
+
+            if(data.interaction.id){
+
+                interactionId =
+                    data.interaction.id;
+
+            }
+
+        }
+
+    }
+
+
+    try{
+
+        while(true){
+
+            const result =
+                await reader.read();
+
+
+            if(result.done){
+
+                break;
+
+            }
+
+
+            buffer +=
+                decoder.decode(
+                    result.value,
+                    {
+                        stream:true
+                    }
+                );
+
+
+            const lines =
+                buffer.split("\n");
+
+
+            /*
+              Keep the final incomplete line
+              for the next network chunk.
+            */
+
+            buffer =
+                lines.pop() || "";
+
+
+            for(
+                let i = 0;
+                i < lines.length;
+                i++
+            ){
+
+                processSSELine(
+                    lines[i].replace(/\r$/,"")
+                );
+
+            }
+
+        }
+
+
+        /*
+          Process anything left in the buffer.
+        */
+
+        if(buffer.trim()){
+
+            processSSELine(
+                buffer.replace(/\r$/,"")
+            );
+
+        }
+
+    }finally{
+
+        clearTimeout(timeout);
+
+        try{
+            reader.releaseLock();
+        }catch(error){}
+
+    }
+
+
+    if(!answer.trim()){
+
+        if(assistantBubble){
+
+            assistantBubble.remove();
+
+        }
+
+        throw new Error(
+            "Gemini returned no text."
         );
 
     }
 
 
     /*
-      Interactions API response:
-
-      steps[]
-        -> model_output
-            -> content[]
-                -> text
+      Keep the local history only for compatibility
+      with the existing page. It is NOT sent to Gemini.
     */
 
-    const answer =
-        data?.steps
-            ?.filter(
-                function(step){
-
-                    return (
-                        step.type ===
-                        "model_output"
-                    );
-
-                }
-            )
-            ?.flatMap(
-                function(step){
-
-                    return (
-                        step.content || []
-                    );
-
-                }
-            )
-            ?.filter(
-                function(content){
-
-                    return (
-                        content.type ===
-                        "text"
-                    );
-
-                }
-            )
-            ?.map(
-                function(content){
-
-                    return (
-                        content.text || ""
-                    );
-
-                }
-            )
-            ?.join("")
-            ?.trim() || "";
+    history.push({
+        role:"user",
+        parts:[
+            {
+                text:message
+            }
+        ]
+    });
 
 
-    /*
-      Some responses can expose
-      output_text directly.
-    */
-
-    const finalAnswer =
-        answer ||
-        data?.output_text ||
-        "";
-
-
-    if(!finalAnswer){
-
-        throw new Error(
-            "Gemini returned an empty response."
-        );
-
-    }
+    history.push({
+        role:"model",
+        parts:[
+            {
+                text:answer
+            }
+        ]
+    });
 
 
-    return finalAnswer;
+    return answer;
 
 }
 
@@ -1918,22 +1899,15 @@ async function callGemini(message){
 async function sendMessage(){
 
     if(busy){
-
         return;
-
     }
 
 
     const input =
-        document.getElementById(
-            "messageInput"
-        );
-
+        document.getElementById("messageInput");
 
     if(!input){
-
         return;
-
     }
 
 
@@ -1942,67 +1916,50 @@ async function sendMessage(){
 
 
     if(!message){
-
         return;
-
     }
 
 
     hideSuggestions();
 
-
     input.value = "";
 
-
-    addMessage(
-        "user",
-        message
-    );
+    addMessage("user",message);
 
 
-    /*
-      Check built-in answers first.
-    */
+    /* LOCAL ANSWER */
 
     const localAnswer =
-        getLocalAnswer(
-            message
-        );
+        getLocalAnswer(message);
 
 
     if(localAnswer){
 
-        setTimeout(
-            function(){
+        setTimeout(function(){
 
-                addMessage(
-                    "assistant",
-                    localAnswer
-                );
+            addMessage(
+                "assistant",
+                localAnswer
+            );
 
-            },
-            250
-        );
+        },250);
 
         return;
 
     }
 
 
-    /*
-      API KEY CHECK
-    */
+    /* API KEY CHECK */
 
     if(!settings.key){
 
         addMessage(
             "assistant",
-
             `Please add your Gemini API key in ⚙ Settings first.
 
 Open Settings → Gemini API Key → paste your key → Save Settings.
 
-Your interface is working; Gemini only needs the API key to answer normal questions.`
+Your page itself is working; Gemini only needs the API key to answer normal questions.`
         );
 
         return;
@@ -2012,66 +1969,17 @@ Your interface is working; Gemini only needs the API key to answer normal questi
 
     busy = true;
 
-
     showTyping();
 
 
     try{
 
-        const answer =
-            await callGemini(
-                message
-            );
-
-
-        removeTyping();
-
-
-        addMessage(
-            "assistant",
-            answer
-        );
-
-
-        /*
-          Save conversation for
-          the next Gemini request.
-        */
-
-        history.push({
-
-            role:
-                "user",
-
-            parts:[
-                {
-                    text:
-                        message
-                }
-            ]
-
-        });
-
-
-        history.push({
-
-            role:
-                "model",
-
-            parts:[
-                {
-                    text:
-                        answer
-                }
-            ]
-
-        });
-
+        await askGeminiFast(message);
 
     }catch(error){
 
         console.error(
-            "Gemini error:",
+            "Gemini streaming error:",
             error
         );
 
@@ -2081,7 +1989,6 @@ Your interface is working; Gemini only needs the API key to answer normal questi
 
         addMessage(
             "assistant",
-
             `Sorry, I couldn't get a response from Gemini.
 
 Error:
@@ -2094,7 +2001,6 @@ Check:
 
 Open ⚙ Settings to change the API key or model.`
         );
-
 
     }finally{
 
@@ -2112,21 +2018,11 @@ Open ⚙ Settings to change the API key or model.`
 function quickAsk(text){
 
     const input =
-        document.getElementById(
-            "messageInput"
-        );
+        document.getElementById("messageInput");
 
+    if(!input) return;
 
-    if(!input){
-
-        return;
-
-    }
-
-
-    input.value =
-        text;
-
+    input.value = text;
 
     sendMessage();
 
@@ -2139,52 +2035,25 @@ function quickAsk(text){
 
 function openSettings(){
 
-    document
-        .getElementById(
-            "nameSetting"
-        )
-        .value =
-            settings.name;
+    document.getElementById("nameSetting").value =
+        settings.name;
+
+    document.getElementById("keySetting").value =
+        settings.key;
+
+    document.getElementById("modelSetting").value =
+        settings.model;
+
+    document.getElementById("personalitySetting").value =
+        settings.personality;
+
+    document.getElementById("knowledgeSetting").value =
+        settings.knowledge;
 
 
     document
-        .getElementById(
-            "keySetting"
-        )
-        .value =
-            settings.key;
-
-
-    document
-        .getElementById(
-            "modelSetting"
-        )
-        .value =
-            settings.model;
-
-
-    document
-        .getElementById(
-            "personalitySetting"
-        )
-        .value =
-            settings.personality;
-
-
-    document
-        .getElementById(
-            "knowledgeSetting"
-        )
-        .value =
-            settings.knowledge;
-
-
-    document
-        .getElementById(
-            "settingsModal"
-        )
-        .classList
-        .add("active");
+        .getElementById("settingsModal")
+        .classList.add("active");
 
 }
 
@@ -2192,11 +2061,8 @@ function openSettings(){
 function closeSettingsModal(){
 
     document
-        .getElementById(
-            "settingsModal"
-        )
-        .classList
-        .remove("active");
+        .getElementById("settingsModal")
+        .classList.remove("active");
 
 }
 
@@ -2207,50 +2073,53 @@ function closeSettingsModal(){
 
 function saveSettings(){
 
+    const oldKey =
+        settings.key;
+
+    const oldModel =
+        settings.model;
+
+    const oldPersonality =
+        settings.personality;
+
+    const oldKnowledge =
+        settings.knowledge;
+
+
     settings.name =
         document
-            .getElementById(
-                "nameSetting"
-            )
-            .value
-            .trim() ||
+        .getElementById("nameSetting")
+        .value
+        .trim() ||
         "Rehan";
 
 
     settings.key =
         document
-            .getElementById(
-                "keySetting"
-            )
-            .value
-            .trim();
+        .getElementById("keySetting")
+        .value
+        .trim();
 
 
     settings.model =
         document
-            .getElementById(
-                "modelSetting"
-            )
-            .value;
+        .getElementById("modelSetting")
+        .value;
 
 
     settings.personality =
         document
-            .getElementById(
-                "personalitySetting"
-            )
-            .value
-            .trim() ||
+        .getElementById("personalitySetting")
+        .value
+        .trim() ||
         defaultSettings.personality;
 
 
     settings.knowledge =
         document
-            .getElementById(
-                "knowledgeSetting"
-            )
-            .value
-            .trim() ||
+        .getElementById("knowledgeSetting")
+        .value
+        .trim() ||
         defaultSettings.knowledge;
 
 
@@ -2259,24 +2128,20 @@ function saveSettings(){
         settings.name
     );
 
-
     saveLocal(
         "nova_key",
         settings.key
     );
-
 
     saveLocal(
         "nova_model",
         settings.model
     );
 
-
     saveLocal(
         "nova_personality",
         settings.personality
     );
-
 
     saveLocal(
         "nova_knowledge",
@@ -2284,15 +2149,30 @@ function saveSettings(){
     );
 
 
-    updateBrand();
+    /*
+      IMPORTANT:
+      If API configuration or system instructions
+      changed, the old Gemini conversation must NOT
+      continue because it contains the old settings.
+    */
 
+    if(
+        oldKey !== settings.key ||
+        oldModel !== settings.model ||
+        oldPersonality !== settings.personality ||
+        oldKnowledge !== settings.knowledge
+    ){
+
+        interactionId = null;
+
+    }
+
+
+    updateBrand();
 
     closeSettingsModal();
 
-
-    showToast(
-        "Settings saved successfully!"
-    );
+    showToast("Settings saved successfully!");
 
 }
 
@@ -2305,25 +2185,24 @@ function newChat(){
 
     busy = false;
 
+    /*
+      API SPEED/STATE CHANGE:
+      Reset the Gemini interaction ID so the next
+      conversation starts cleanly.
+    */
+
+    interactionId = null;
+
     showWelcome();
 
-
     const input =
-        document.getElementById(
-            "messageInput"
-        );
-
+        document.getElementById("messageInput");
 
     if(input){
-
         input.focus();
-
     }
 
-
-    showToast(
-        "New chat started"
-    );
+    showToast("New chat started");
 
 }
 
@@ -2335,37 +2214,20 @@ function newChat(){
 function showToast(text){
 
     const toast =
-        document.getElementById(
-            "toast"
-        );
+        document.getElementById("toast");
+
+    if(!toast) return;
+
+    toast.textContent = text;
+
+    toast.classList.add("show");
 
 
-    if(!toast){
+    window.setTimeout(function(){
 
-        return;
+        toast.classList.remove("show");
 
-    }
-
-
-    toast.textContent =
-        text;
-
-
-    toast.classList.add(
-        "show"
-    );
-
-
-    window.setTimeout(
-        function(){
-
-            toast.classList.remove(
-                "show"
-            );
-
-        },
-        2000
-    );
+    },2000);
 
 }
 </script>
